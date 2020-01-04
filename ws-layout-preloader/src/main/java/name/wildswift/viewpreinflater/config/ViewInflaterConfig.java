@@ -2,13 +2,16 @@ package name.wildswift.viewpreinflater.config;
 
 import android.view.View;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class ViewInflaterConfig {
-    private final Map<Class<? extends View>, Integer> cache;
+    private final List<CacheConfigElement> cacheRules;
 
-    private ViewInflaterConfig(Map<Class<? extends View>, Integer> cache) {
-        this.cache = cache;
+    private ViewInflaterConfig(List<CacheConfigElement> cacheRules) {
+        this.cacheRules = cacheRules;
     }
 
     /**
@@ -16,22 +19,33 @@ public class ViewInflaterConfig {
      *
      * @return meta to cache views
      */
-    public Map<Class<? extends View>, Integer> getCacheConfig() {
-        return cache;
+    public List<CacheConfigElement> getCacheConfig() {
+        return cacheRules;
+    }
+
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**
      * Builder to create ViewInflaterConfig
      */
     public static class Builder {
-        private final CacheConfigBuilder cacheConfigs = new CacheConfigBuilder(this);
+        private List<ViewCacheBuilder> cacheSubBuilders = new ArrayList<>();
 
-        public CacheConfigBuilder cache() {
-            return cacheConfigs;
+        public ViewCacheBuilder view(Class<? extends View> view) {
+            ViewCacheBuilder viewCacheBuilder = new ViewCacheBuilder(view, this);
+            cacheSubBuilders.add(viewCacheBuilder);
+            return viewCacheBuilder;
         }
 
         public ViewInflaterConfig build() {
-            return new ViewInflaterConfig(cacheConfigs.build());
+            ArrayList<CacheConfigElement> cacheRules = new ArrayList<>();
+            for (ViewCacheBuilder builder : cacheSubBuilders) {
+                cacheRules.add(builder.build());
+            }
+            return new ViewInflaterConfig(cacheRules);
         }
     }
 }
