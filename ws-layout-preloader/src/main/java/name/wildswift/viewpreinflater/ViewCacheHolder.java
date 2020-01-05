@@ -53,12 +53,9 @@ class ViewCacheHolder<T extends View> implements Comparable<ViewCacheHolder<T>>{
         final PerformOnInit onInitTask = new PerformOnInit(callback);
         synchronized (internalMutex) {
             if (initStarted) return;
-            final List<Future<Boolean>> futures;
-            try {
-                futures = executor.invokeAll(Collections.nCopies(count, new InitTask()));
-            } catch (InterruptedException e) {
-                mainHandler.post(new ThrowExceptionRunnable(e));
-                return;
+            final List<Future<Boolean>> futures = new ArrayList<>(count + 1);
+            for (int i = 0; i < count; i++) {
+                futures.add(executor.submit(new InitTask()));
             }
             new Thread(new Runnable() {
                 @Override

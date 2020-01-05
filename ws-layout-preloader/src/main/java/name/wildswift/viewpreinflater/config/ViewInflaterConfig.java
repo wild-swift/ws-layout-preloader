@@ -34,6 +34,9 @@ public class ViewInflaterConfig {
     public static class Builder {
         private List<ViewCacheBuilder> cacheSubBuilders = new ArrayList<>();
 
+        private Builder() {
+        }
+
         public ViewCacheBuilder view(Class<? extends View> view) {
             ViewCacheBuilder viewCacheBuilder = new ViewCacheBuilder(view, this);
             cacheSubBuilders.add(viewCacheBuilder);

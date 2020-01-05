@@ -2,15 +2,20 @@ package name.wildswift.viewpreinflater.config.qualifiers;
 
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.LocaleList;
 import android.util.DisplayMetrics;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Locale;
 
 
+@SuppressWarnings("ALL")
 public class QualifiersSpec implements Comparable<QualifiersSpec> {
     private final Integer mcc;
     private final Integer mnc;
@@ -57,7 +62,7 @@ public class QualifiersSpec implements Comparable<QualifiersSpec> {
     @SuppressWarnings("ConstantConditions")
     public boolean accept(Resources res) {
         Configuration configuration = res.getConfiguration();
-        if (this.mcc != null && configuration.mcc != this.mnc) return false;
+        if (this.mcc != null && configuration.mcc != this.mcc) return false;
         if (this.mnc != null && configuration.mnc != this.mnc) return false;
         if (this.locale != null) {
             // TODO need more complex compare for multilocale
@@ -89,24 +94,9 @@ public class QualifiersSpec implements Comparable<QualifiersSpec> {
         if (this.navigation != null && configuration.navigation != this.navigation.configurationValue) return false;
         if (this.keysHidden != null && configuration.keyboardHidden != this.keysHidden.configurationValue) return false;
         if (this.navHidden != null && configuration.navigationHidden != this.navHidden.configurationValue) return false;
-        if (this.smallestScreenWidth != null)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                if (configuration.smallestScreenWidthDp < this.screenWidth) return false;
-            } else {
-                if (Math.min(res.getDisplayMetrics().widthPixels / res.getDisplayMetrics().xdpi * 160, res.getDisplayMetrics().heightPixels / res.getDisplayMetrics().ydpi * 160) < this.screenWidth) return false;
-            }
-        if (this.screenWidth != null)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                if (configuration.screenWidthDp < this.screenWidth) return false;
-            } else {
-                if (res.getDisplayMetrics().widthPixels / res.getDisplayMetrics().xdpi * 160 < this.screenWidth) return false;
-            }
-        if (this.screenHeight != null)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                if (configuration.screenHeightDp < this.screenHeight) return false;
-            } else {
-                if (res.getDisplayMetrics().heightPixels / res.getDisplayMetrics().ydpi * 160 < this.screenHeight) return false;
-            }
+        if (this.smallestScreenWidth != null && configuration.smallestScreenWidthDp < this.screenWidth) return false;
+        if (this.screenWidth != null && configuration.screenWidthDp < this.screenWidth) return false;
+        if (this.screenHeight != null && configuration.screenHeightDp < this.screenHeight) return false;
         if (this.sdkVersion != null && Build.VERSION.SDK_INT < this.sdkVersion) return false;
         if (this.screenSize != null && (configuration.screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) != this.screenSize.configurationValue) return false;
         if (this.screenLong != null && (configuration.screenLayout & Configuration.SCREENLAYOUT_LONG_MASK) != this.screenLong.configurationValue) return false;
@@ -222,22 +212,74 @@ public class QualifiersSpec implements Comparable<QualifiersSpec> {
     }
 
     public Context convertContext(final Context context) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new Configuration(context.getResources().getConfiguration());
+
+        if (this.mcc != null) configuration.mcc = this.mcc;
+        if (this.mnc != null) configuration.mnc = this.mnc;
+        if (this.orientation != null) configuration.orientation = this.orientation.configurationValue;
+        if (this.touchscreen != null)  configuration.touchscreen = this.touchscreen.configurationValue;
+        if (this.keyboard != null) configuration.keyboard = this.keyboard.configurationValue;
+        if (this.navigation != null) configuration.navigation = this.navigation.configurationValue;
+        if (this.keysHidden != null) configuration.keyboardHidden = this.keysHidden.configurationValue;
+        if (this.navHidden != null) configuration.navigationHidden = this.navHidden.configurationValue;
+        if (this.screenSize != null) configuration.screenLayout = (configuration.screenLayout & ~Configuration.SCREENLAYOUT_SIZE_MASK) | this.screenSize.configurationValue;
+        if (this.screenLong != null) configuration.screenLayout = (configuration.screenLayout & ~Configuration.SCREENLAYOUT_LONG_MASK) | this.screenLong.configurationValue;
+        if (this.uiMode != null) configuration.uiMode = (configuration.uiMode & ~Configuration.UI_MODE_TYPE_MASK) | this.uiMode.configurationValue;
+        if (this.nightMode != null) configuration.uiMode = (configuration.uiMode & ~Configuration.UI_MODE_NIGHT_MASK) | this.nightMode.configurationValue;
+        if (this.smallestScreenWidth != null) configuration.smallestScreenWidthDp = this.smallestScreenWidth + 1;
+        if (this.screenWidth != null) configuration.screenWidthDp = this.screenWidth + 1;
+        if (this.screenHeight != null) configuration.screenHeightDp = this.screenHeight + 1;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            if (this.locale != null) configuration.setLocale(this.locale);
+            if (this.density != null) {
+                configuration.densityDpi = this.density.referenceValue;
+            }
+            if (this.layoutDirection != null) configuration.screenLayout = (configuration.screenLayout & ~Configuration.SCREENLAYOUT_LAYOUTDIR_MASK) | this.layoutDirection.configurationValue;
+
             return context.createConfigurationContext(configuration);
         } else {
             final DisplayMetrics displayMetrics = new DisplayMetrics();
-            DisplayMetrics currentDisplayMetrics = context.getResources().getDisplayMetrics();
-            displayMetrics.xdpi = currentDisplayMetrics.xdpi;
-            ContextWrapper contextWrapper = new ContextWrapper(context){
-                private Resources resources = new Resources(context.getAssets(), displayMetrics, configuration);
+            displayMetrics.setTo(context.getResources().getDisplayMetrics());
+
+            if (this.locale != null) configuration.locale = this.locale;
+            if (this.density != null) {
+                displayMetrics.densityDpi = this.density.referenceValue;
+                displayMetrics.xdpi = this.density.referenceValue;
+                displayMetrics.ydpi = this.density.referenceValue;
+                displayMetrics.density = this.density.referenceValue / 160f;
+                displayMetrics.scaledDensity = this.density.referenceValue * (configuration.fontScale != 0 ? configuration.fontScale : 1.0f);
+            }
+
+            return new ContextWrapper(context) {
+                private final Resources resources;
+                {
+                    AssetManager assetManager;
+                    try {
+                        Constructor<AssetManager> constructor = AssetManager.class.getConstructor();
+                        constructor.setAccessible(true);
+                        Method addAssetPath = AssetManager.class.getMethod("addAssetPath", String.class);
+                        addAssetPath.setAccessible(true);
+
+                        assetManager = constructor.newInstance();
+                        addAssetPath.invoke(assetManager, context.getApplicationInfo().sourceDir);
+
+                    } catch (Exception e) {
+                        assetManager = super.getResources().getAssets();
+                    }
+                    resources = new Resources(assetManager, displayMetrics, configuration);
+                }
+
+                @Override
+                public AssetManager getAssets() {
+                    return resources.getAssets();
+                }
 
                 @Override
                 public Resources getResources() {
                     return resources;
                 }
             };
-            return contextWrapper;
         }
     }
 

@@ -18,11 +18,55 @@ package name.wildswift.testapp;
 import android.app.Activity;
 import android.os.Bundle;
 
+import java.util.Locale;
+
+import name.wildswift.viewpreinflater.ViewInflater;
+import name.wildswift.viewpreinflater.ViewInflaterInitCallback;
+import name.wildswift.viewpreinflater.config.ViewInflaterConfig;
+import name.wildswift.viewpreinflater.config.qualifiers.Density;
+import name.wildswift.viewpreinflater.config.qualifiers.Keyboard;
+import name.wildswift.viewpreinflater.config.qualifiers.KeysHidden;
+import name.wildswift.viewpreinflater.config.qualifiers.LayoutDirection;
+import name.wildswift.viewpreinflater.config.qualifiers.Navigation;
+import name.wildswift.viewpreinflater.config.qualifiers.NightMode;
+import name.wildswift.viewpreinflater.config.qualifiers.Orientation;
+import name.wildswift.viewpreinflater.config.qualifiers.ScreenLong;
+import name.wildswift.viewpreinflater.config.qualifiers.Touchscreen;
+import name.wildswift.viewpreinflater.config.qualifiers.UiMode;
+
 public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ViewInflaterConfig config = ViewInflaterConfig.builder()
+                .view(TestView.class).single()
+                .view(TestView.class).forMnc(210).single()
+                .view(TestView.class).forMcc(320).single()
+                .view(TestView.class).forLocale(new Locale("es")).single()
+                .view(TestView.class).forOrientation(Orientation.LANDSCAPE).single()
+                .view(TestView.class).forTouchscreen(Touchscreen.NOTOUCH).single()
+                .view(TestView.class).forDensity(Density.HIGH).single()
+                .view(TestView.class).forKeyboard(Keyboard.K12KEY).single()
+                .view(TestView.class).forNavigation(Navigation.WHEEL).single()
+                .view(TestView.class).forKeysHidden(KeysHidden.YES).single()
+                .view(TestView.class).forUiMode(UiMode.TELEVISION).single()
+                .view(TestView.class).forNightMode(NightMode.YES).single()
+                .view(TestView.class).forScreenLong(ScreenLong.YES).single()
+                .view(TestView.class).forLayoutDirection(LayoutDirection.RTL).single()
+                .view(TestView.class).forScreenWidth(420).single()
+                .view(TestView.class).forScreenHeight(900).single()
+                .view(TestView.class).forSmallestScreenWidth(500).single()
+                .build();
+
+        ViewInflater viewInflater = new ViewInflater(this, config);
+        viewInflater.initialize(new ViewInflaterInitCallback() {
+            @Override
+            public void onInit(ViewInflater inflater) {
+                System.out.println("test");
+            }
+        });
     }
 }
