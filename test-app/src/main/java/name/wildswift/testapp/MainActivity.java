@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
                 .view(TestView.class).forLayoutDirection(LayoutDirection.RTL).single()
                 .view(TestView.class).forScreenWidth(420).single()
                 .view(TestView.class).forScreenHeight(900).single()
-                .view(TestView.class).forSmallestScreenWidth(500).single()
+                .view(TestView.class).forSmallestScreenWidth(600).single()
                 .build();
 
         ViewInflater viewInflater = new ViewInflater(this, config);
