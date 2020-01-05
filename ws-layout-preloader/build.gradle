@@ -100,7 +100,9 @@ bintray {
         }
     }
 }
+
 project.afterEvaluate {
     bintrayUpload.dependsOn(assemble, javadocJar, sourcesJar)
+    publishProductionPublicationToMavenLocal.dependsOn "assemble"
     bintrayUpload.dependsOn "generatePomFileForProductionPublication"
 }
