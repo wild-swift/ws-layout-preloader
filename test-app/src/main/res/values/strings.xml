@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">TestApp</string>
+    <string name="app_name" translatable="false">TestApp</string>
     <string name="testString">DEFAULT</string>
 </resources>
